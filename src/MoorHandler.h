@@ -93,7 +93,7 @@ void PrintResult(const std::vector<FileLine>& fileLines)
         std::string resultLine;
         resultLine += TrimToData(line.From) + ' ';
         resultLine += TrimToData(line.To) + ' ';
-        resultLine += line.X + ' ';
+        resultLine += line.X + " / ";
         resultLine += 'Y' + std::to_string(y.value());
         std::cout << resultLine << std::endl;
     }
