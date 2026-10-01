@@ -1,0 +1,21 @@
+type: moore
+start state: S1_0
+
+states:
+S1_0 | S1 / 0
+S2_0 | S2 / 0
+S3_0 | S3 / 0
+S3_1 | S3 / 1
+S4_0 | S4 / 0
+
+transitions:
+S1_0 S2_0 b
+S1_0 S3_1 a
+S2_0 S1_0 a
+S2_0 S3_1 b
+S3_0 S3_0 b
+S3_0 S4_0 a
+S3_1 S3_0 b
+S3_1 S4_0 a
+S4_0 S1_0 a
+S4_0 S3_1 b
