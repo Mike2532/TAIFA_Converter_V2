@@ -5,11 +5,25 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <algorithm>
+#include <ranges>
+#include <set>
 
 class MealyHandler {
 public:
     void HandleMealy(std::ifstream& file)
     {
+        std::string line;
+        if (!std::getline(file, line)) {
+            throw std::runtime_error("Empty file");
+        }
+
+        size_t colonPos = line.find(':');
+        if (colonPos == std::string::npos) {
+            throw std::runtime_error("Expected 'start:' line");
+        }
+        m_originalStartState = Trim(line.substr(colonPos + 1));
+
         SkipUntilTransitions(file);
 
         auto [fileLies, allX] = ParseMealyFileData(file);
@@ -36,7 +50,15 @@ private:
         std::unordered_map<std::string, std::optional<std::string>> transactions;
     };
 
+    std::string m_originalStartState;
     std::unordered_map<std::string, std::optional<std::string>> m_clearTransactions;
+
+    std::string Trim(const std::string& str) {
+        size_t first = str.find_first_not_of(" \t\r\n");
+        if (std::string::npos == first) return "";
+        size_t last = str.find_last_not_of(" \t\r\n");
+        return str.substr(first, (last - first + 1));
+    }
 
     void SkipUntilTransitions(std::ifstream& file)
     {
@@ -80,7 +102,7 @@ private:
         return std::make_tuple(fileLies, allX);
     }
 
-    std::vector<MoorElem> ConstructEmptyMoors(const std::vector<FileLine>& fileLines)
+        std::vector<MoorElem> ConstructEmptyMoors(const std::vector<FileLine>& fileLines)
     {
         std::vector<MoorElem> moors;
         moors.reserve(fileLines.size());
@@ -97,6 +119,43 @@ private:
                 moorName,
                 line.To,
                 line.Y,
+                m_clearTransactions
+            ));
+        }
+
+        std::set<std::string> sourceStates;
+        for (const auto& line : fileLines) {
+            sourceStates.insert(line.From);
+        }
+
+        for (const auto& src : sourceStates) {
+            bool alreadyPresent = false;
+            for (const auto& moor : moors) {
+                if (moor.To == src) {
+                    alreadyPresent = true;
+                    break;
+                }
+            }
+            if (alreadyPresent) {
+                continue;
+            }
+
+            std::string output;
+            for (const auto& line : fileLines) {
+                if (line.From == src) {
+                    output = line.Y;
+                    break;
+                }
+            }
+            if (output.empty()) {
+                continue;
+            }
+
+            std::string moorName = src + '_' + output;
+            moors.push_back(MoorElem(
+                moorName,
+                src,
+                output,
                 m_clearTransactions
             ));
         }
@@ -126,10 +185,20 @@ private:
         std::ranges::sort(moors, [](const MoorElem& a, const MoorElem& b) {
             return a.Name < b.Name;
         });
-        const std::string firstName = moors[0].Name;
+
+        std::string startStateName;
+        for (const auto& moor : moors) {
+            if (moor.To == m_originalStartState) {
+                startStateName = moor.Name;
+                break;
+            }
+        }
+        if (startStateName.empty()) {
+            throw std::runtime_error("Could not find Moore state for original start state: " + m_originalStartState);
+        }
 
         std::cout << "type: moore" << std::endl;
-        std::cout << "start state: " << firstName << std::endl;
+        std::cout << "start state: " << startStateName << std::endl;
         std::cout << std::endl;
         std::cout << "states:" << std::endl;
         for (const auto& moor : moors) {

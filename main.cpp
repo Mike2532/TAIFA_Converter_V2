@@ -4,7 +4,7 @@
 #include "src/MoorHandler.h"
 
 void RunApp() {
-    std::ifstream file("../input.txt");
+    std::ifstream file("../test/N7_solutions/4_moor_optimized.txt");
     if (!file.is_open()) {
         throw std::runtime_error("Could not open file");
     }
